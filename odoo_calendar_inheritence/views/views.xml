@@ -1,0 +1,90 @@
+<odoo>
+    <record id="video_attachment_form_view" model="ir.ui.view">
+        <field name="name">video.attachment.form.view</field>
+        <field name="model">video.attachment</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <group>
+                        <field name="calendar_id" invisible="1"/>
+                        <field name="video_description"/>
+                        <field name="avatar" string="Videos" widget="many2many_binary"/>
+                    </group>
+                </group>
+            </form>
+        </field>
+    </record>
+
+    <record id="calendar_alarm_form_view" model="ir.ui.view">
+        <field name="name">calendar.alarm.form.view</field>
+        <field name="model">calendar.event</field>
+        <field name="inherit_id" ref="calendar.view_calendar_event_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='page_invitations']" position="after">
+                <page name="agenda" string="Meeting Agenda">
+                    <field name="product_line_ids" widget="one2many">
+                       <tree reorder="1" editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="agenda" column_invisible='True'/>
+                            <field name="description"/>
+                            <field name="presenter_id" widget="many2many_tags"/>
+                           <field name="time"/>
+<!--                            <field name="start_date"/>-->
+<!--                            <field name="end_date"/>-->
+                            <button name="action_open_documents" string="Attachments" type="object"
+                                    icon="fa-file-text-o"/>
+                        </tree>
+                        <form>
+                            <group>
+
+                            <field name="presenter_id" widget="many2many_tags"/>
+                            <field name="description" string="Agenda"/>
+
+                            </group>
+                        </form>
+                    </field>
+                    <div>
+                        <field name="article_exists" invisible="1"/>
+                        <button string="Create Board Pack" name="action_create_html_all" type="object"
+                                class="btn btn-primary m-1" icon="fa-plus" invisible="article_exists"/>
+                        <button string="Update Board Pack" invisible="not article_exists" name="action_update_html_all" type="object"
+                                class="btn btn-secondary m-1" icon="fa-magic"/>
+                        <button string="View Board Pack" invisible="not article_exists" name="action_view_knowledge_article" type="object"
+                                class="btn btn-warning m-1" icon="fa-external-link"/>
+                    </div>
+                </page>
+                <page name="action_points" string="Action Points">
+                    <group string="Action Points">
+                        <field name="child_ids" widget="subtasks_one2many" nolabel="1" colspan="2">
+                            <tree editable="bottom" decoration-muted="state in ['1_done','1_canceled']">
+                                <field name="state" widget="project_task_state_selection" nolabel="1"
+                                       options="{'autosave':  False}" width="40px"/>
+                                <field name="new_project_id"/>
+                                <field name="new_task_name"/>
+                                <field name="stage_id"/>
+                                <field name="user_ids" readonly="false" widget="many2many_tags"/>
+                                <field name="date_deadline" invisible="state in ['1_done', '1_canceled']"
+                                       decoration-danger="date_deadline &lt; current_date"
+                                       widget="daterange"
+                                       options="{'end_date_field': 'end_date'}"/>
+                                <field name="end_date" column_invisible="True"/>
+                                <button name="action_create_task" string="Create Task" type="object"
+                                        class="oe_highlight" invisible="task_id"/>
+                                <button name="action_view_task" string="View Task" type="object" class="oe_link"/>
+                                <field name="task_id" string="View Task" readonly="1"/>
+                            </tree>
+                        </field>
+                    </group>
+                </page>
+                <page name="minutes_of_meeting" string="Minutes of Meetings">
+                    <button name="action_create_agenda_descriptions" type="object" string="View minutes" class="btn btn-warning m-1" icon="fa-external-link"/>
+                    <group string="Attendees">
+                        <field name="partner_ids" readonly="1"/>
+                    </group>
+
+<!--                    <field name="mom_description" readonly="1" string="Description" placeholder="Enter text here..."/>-->
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_video_attachment,video.attachment,model_video_attachment,base.group_user,1,1,1,1
+access_project_task,project.task,model_project_task,base.group_user,1,1,1,1
+access_calendar_line,calendar.line,model_calendar_line,base.group_user,1,1,1,1
+access_agenda_lines,agenda.lines,model_agenda_lines,base.group_user,1,1,1,1
+access_calendar_event_product_line,calendar.event.product.line,model_calendar_event_product_line,base.group_user,1,1,1,1

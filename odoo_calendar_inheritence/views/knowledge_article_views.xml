@@ -1,0 +1,14 @@
+<odoo>
+    <!--    <record id="knowledge.knowledge_article_action"/>-->
+    <record id="knowledge.knowledge_article_action" model="ir.actions.act_window">
+        <field name="name">Board Pack</field>
+    </record>
+    <!-- Define the group -->
+    <record id="group_make_invisible" model="res.groups">
+        <field name="name">Make Invisible</field>
+    </record>
+
+    <!-- Define the menu item and associate it with the group -->
+    <menuitem id="knowledge.knowledge_menu_home" name="Home" groups="group_make_invisible"/>
+
+</odoo>
