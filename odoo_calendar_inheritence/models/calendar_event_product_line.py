@@ -40,6 +40,7 @@ class CalendarEventProductLine(models.Model):
                         'type':'binary',
                         'datas':attachment_bytes,
                         'res_id':product.id,
+                        'ir_attachment_id': attachment.id,
                         # 'user_ids':[(6, 0, self.env.user.id)],
                     }
                 )
@@ -47,37 +48,63 @@ class CalendarEventProductLine(models.Model):
         return rtn
 
     def write(self, values):
-        # print(self)
+
         if 'agenda' in values and values['agenda']:
             self._check_unique_agenda(values['agenda'], self.id)
-        # print(values)
+        print('------------------->',values)
         if 'pdf_attachment' in values:
             create_doc=[]
-            list_ids=[]
+            create_list_ids=[]
+            unlink_doc=[]
+            unlink_list_ids=[]
+
             for attachment in values['pdf_attachment']:
-                rec_id=attachment[1]
-                list_ids.append(rec_id)
-            att=self.env['ir.attachment'].browse(list_ids)
-            for rec in att:
-                attachment_data = rec.datas
-                attachment_bytes = base64.b64encode(attachment_data)
-                create_doc.append({
-                    'res_model': 'product.template',
-                    'name': rec.name,
-                    'type': 'binary',
-                    'datas': attachment_bytes,
-                    'res_id': self.product_id.id,
-                    # 'user_ids':[(6, 0, self.env.user.id)],
-                })
-            self.env['product.document'].sudo().create(create_doc)
-            self.calendar_id.compute_visible_users()
+                if attachment[0] == 4:
+                    rec_id=attachment[1]
+                    create_list_ids.append(rec_id)
 
+                elif attachment[0] == 3:
+                    rec_id = attachment[1]
+                    is_remove = True
+                    unlink_list_ids.append((rec_id))
+                    # doc = self.env['ir.attachment'].browse(unlink_list_ids)
+            if create_list_ids:
+                att = self.env['ir.attachment'].browse(create_list_ids)
+                for rec in att:
+                    attachment_data =rec.datas
+                    attachment_bytes = base64.b64encode(attachment_data)
+                    create_doc.append({
+                        'res_model': 'product.template',
+                        'name': rec.name,
+                        'type': 'binary',
+                        'datas': attachment_bytes,
+                        'res_id': self.product_id.id,
+                        'ir_attachment_id': rec.id
+                        # 'user_ids':[(6, 0, self.env.user.id)],
+                    })
 
+                if create_doc:
+                    doc_res = self.env['product.document'].sudo().create(create_doc)
+            if unlink_list_ids:
+                res=self.env['product.document'].sudo().search([('ir_attachment_id','in',unlink_list_ids)])
+                print('Unlink--',res)
+                if res:
+                    res.sudo().unlink()
                 # attachment_data = attachment.datas
                 # attachment_bytes = base64.b64encode(attachment_data)
-
+        self.calendar_id.compute_visible_users()
         res=super(CalendarEventProductLine, self).write(values)
         # print(res)
+        return res
+
+    def unlink(self):
+        unlink_list_ids=[]
+        for record in self:
+            if record.pdf_attachment:
+                unlink_res = self.env['product.document'].sudo().search([('ir_attachment_id', 'in', record.pdf_attachment.ids)])
+                if unlink_res:
+                    unlink_res.sudo().unlink()
+        res = super(CalendarEventProductLine,self).unlink()
         return res
 
     def _create_subtask(self):

@@ -1,15 +1,40 @@
 <odoo>
     <data>
-        <!--        <record id="product_document_tree_inherit" model="ir.ui.view">-->
-        <!--            <field name="name">product.document.tree.extended</field>-->
-        <!--            <field name="model">product.document</field>-->
-        <!--            <field name="inherit_id" ref="product.product_document_list"/>-->
-        <!--            <field name="arch" type="xml">-->
-        <!--                <xpath expr="//field[@name='shown_on_product_page']" position='after'>-->
-        <!--                    <button name="create_knowledge_article_from_kanban" type="object" string="Create Knowledge Article"/>-->
-        <!--                </xpath>-->
-        <!--            </field>-->
-        <!--        </record>-->
+
+        <record id="sale_product_document_tree_inherit" model="ir.ui.view">
+            <field name="name">sale.product.document.tree.extended</field>
+            <field name="model">product.document</field>
+            <field name="inherit_id" ref="sale.product_document_list"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='attached_on']" position="attributes">
+                    <attribute name="column_invisible">1</attribute>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="website_sale_product_document_list_inherit" model="ir.ui.view">
+            <field name="name">website.sale.product.document.list.inherit</field>
+            <field name="model">product.document</field>
+            <field name="inherit_id" ref="website_sale.product_document_list"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='shown_on_product_page']" position="attributes">
+                    <attribute name="column_invisible">1</attribute>
+                </xpath>
+            </field>
+        </record>
+        <record id="product_document_tree_inherit" model="ir.ui.view">
+            <field name="name">product.document.tree.extended</field>
+            <field name="model">product.document</field>
+            <field name="inherit_id" ref="product.product_document_list"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='attached_on']" position="attributes">
+                    <attribute name="column_invisible">1</attribute>
+                </xpath>
+                <xpath expr="//field[@name='company_id']" position="attributes">
+                    <attribute name="column_invisible">1</attribute>
+                </xpath>
+            </field>
+        </record>
 
         <record id="product_document_form_inherit" model="ir.ui.view">
             <field name="name">product.document.form.extended</field>
@@ -17,8 +42,9 @@
             <field name="inherit_id" ref="product.product_document_form"/>
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='datas']" position="after">
-<!--                    <field name="user_ids" string="Document visible to: " widget="many2many_tags"/>-->
+                    <!--                    <field name="user_ids" string="Document visible to: " widget="many2many_tags"/>-->
                     <field name="partner_ids" string="Document visible to: " widget="many2many_tags"/>
+                    <field name="ir_attachment_id"/>
                 </xpath>
                 <xpath expr="//field[@name='datas']" position="attributes">
                     <attribute name="string">File</attribute>
@@ -38,7 +64,7 @@
             </field>
         </record>
 
-<!--        Inherits Kanban View and SHows PDF Annotation By Default!-->
+        <!--        Inherits Kanban View and SHows PDF Annotation By Default!-->
         <record id="sale_product_document_kanban_inherit_extended" model="ir.ui.view">
             <field name="name">sale.product.document.inherit.extended</field>
             <field name="model">product.document</field>
@@ -46,7 +72,8 @@
             <field name="arch" type="xml">
                 <xpath expr="//div[@name='bottom']" position="replace">
                     <div>
-                        <button name="action_open_pdf_annotation" class="btn btn-primary" id="open_pdf_annotation" string="PDF Annotation"
+                        <button name="action_open_pdf_annotation" class="btn btn-primary" id="open_pdf_annotation"
+                                string="PDF Annotation"
                                 type="object"/>
                     </div>
                 </xpath>
@@ -80,7 +107,8 @@
             <field name="arch" type="xml">
                 <xpath expr="//div[@name='bottom']" position="replace">
                     <div>
-                        <button name="action_open_pdf_annotation" class="btn btn-primary" id="open_pdf_annotation" string="PDF Annotation"
+                        <button name="action_open_pdf_annotation" class="btn btn-primary" id="open_pdf_annotation"
+                                string="PDF Annotation"
                                 type="object"/>
                     </div>
                 </xpath>

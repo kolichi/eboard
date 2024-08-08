@@ -16,25 +16,31 @@ class KnowledgeArticle(models.Model):
         meeting_end_time = self.calendar_id.stop
         active_user = self.env.user.partner_id.id
         company_id = self.env.company.id
-        domain = []
-        if current_time and meeting_end_time:
-            if current_time >= meeting_end_time: #If Meeting Has Ended
-                domain = [
-                    '|',
-                    '&', ('res_model', '=', 'product.template'), ('res_id', '=', self.product_id.id),
-                    '&',
-                    ('res_model', '=', 'product.template'),
-                    ('res_id', 'in', self.product_id.product_variant_ids.ids),
-                ]
-            else: #If meeting is still going!
-                domain = [
-                    '|',
-                    '&', ('res_model', '=', 'product.template'), ('res_id', '=', self.product_id.id),
-                    '&',
-                    ('res_model', '=', 'product.template'),
-                    ('res_id', 'in', self.product_id.product_variant_ids.ids),
-                    ('partner_ids', 'in', [active_user]),
-                ]
+        domain = [
+            '|',
+            '&', ('res_model', '=', 'product.template'), ('res_id', '=', self.product_id.id),
+            '&',
+            ('res_model', '=', 'product.template'),
+            ('res_id', 'in', self.product_id.product_variant_ids.ids),
+            ('partner_ids', 'in', [active_user]),]
+        # if current_time and meeting_end_time:
+        #     if current_time >= meeting_end_time: #If Meeting Has Ended
+        #         domain = [
+        #             '|',
+        #             '&', ('res_model', '=', 'product.template'), ('res_id', '=', self.product_id.id),
+        #             '&',
+        #             ('res_model', '=', 'product.template'),
+        #             ('res_id', 'in', self.product_id.product_variant_ids.ids),
+        #         ]
+        #     else: #If meeting is still going!
+        #         domain = [
+        #             '|',
+        #             '&', ('res_model', '=', 'product.template'), ('res_id', '=', self.product_id.id),
+        #             '&',
+        #             ('res_model', '=', 'product.template'),
+        #             ('res_id', 'in', self.product_id.product_variant_ids.ids),
+        #             ('partner_ids', 'in', [active_user]),
+        #         ]
         for rec in self:
             return {
                 'name': _('Documents'),

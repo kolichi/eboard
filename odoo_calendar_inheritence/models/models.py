@@ -109,9 +109,13 @@ class OdooCalendarInheritence(models.Model):
 
     @api.depends('attendees_lines_ids')
     def _compute_mom_count(self):
+        count = 0
         for rec in self:
             if rec.attendees_lines_ids:
-                rec.mom_lines_count = len(rec.attendees_lines_ids)
+                for attendee in rec.attendees_lines_ids:
+                    if attendee.has_attended:
+                        count +=1
+                rec.mom_lines_count = count
             else:
                 rec.mom_lines_count = 0
 
@@ -165,6 +169,14 @@ class OdooCalendarInheritence(models.Model):
     # ----------------------------------------------------------------------------
     # ----------------------------------------------------------------------------
 
+    def write(self, vals):
+        if 'name' in vals:
+            if self.project_id:
+                self.project_id.sudo().write({
+                    'name':vals['name']
+                })
+        res = super(OdooCalendarInheritence, self).write(vals)
+        return res
 
 
     @api.depends('article_id')
@@ -361,6 +373,116 @@ class OdooCalendarInheritence(models.Model):
         }
         self.article_id.sudo().write(article_values)
 
+    def action_create_agenda_descriptions(self):
+        company_id = self.env.company
+        # Get the company logo
+        logo = company_id.logo
+        if logo:
+            logo_html = Markup('<img src="%s" class="bg-view" alt="Company Logo"/>') % self._get_src_data_b64(logo)
+            # print(logo_html)
+        if not self.product_line_ids:
+            raise ValidationError("Please add data before making an Article!")
+        if not self.description_article_id:
+            counter = 1
+            company_id = self.env.company
+            mom_description_content = Markup("""""")
+            attendees_names = Markup("""""")
+
+
+            # Build the table rows for each agenda line
+            for line in self.product_line_ids:
+                mom_description_content += Markup("""
+                            {description}<hr>
+                            """).format(
+                                description=line.description or 'N/A'
+                )
+                counter += 1
+            attendees = self.action_confirm_attendees()
+            self.has_attendees_confirmed = True
+            if attendees:
+                attendees_names += Markup("""
+                                                    <strong>Meeting Attendees:</strong><br><br>
+                """)
+            for attendee in attendees:
+                if attendee:
+                    attendees_names += Markup("""
+                                    {attendee_name}<br>
+                """).format(attendee_name=attendee.attendee_name)
+            attendees_names += Markup("""
+                        <hr>
+                """)
+
+            body_content = Markup("""
+                <div>
+                    <header style="text-align: center;">
+                        {logo_html}<br><br>
+                        <h2><strong>{company_name}<strong></h2>
+                    </header>
+                    <div class="container">
+                        <div class="card-body border-dark">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col align-items-center">
+                                    <!-- Name and position -->
+                                    <p class="mb-0">
+                                        <span> {company_street} </span>
+                                    </p>
+                                    <p class="mb-0">
+                                        <span> {company_city} </span>
+                                    </p>
+                                    <p class="m-0">
+                                        <span> {company_country} </span>
+                                    </p>
+                                </div>
+                                <div class="col-auto">
+                                    <!-- Phone and email -->
+                                    <div class="float-right text-end">
+                                        <p class="mb-0 float-right">
+                                            <span> {company_phone} </span>
+                                            <i class="fa fa-phone-square ms-2 text-info" title="Phone"/>
+                                        </p>
+                                        <p class="mb-0 float-right">
+                                            <span> {company_email} </span>
+                                            <i class="fa fa-envelope ms-2 text-info" title="Email"/>
+                                        </p>
+                                        <p class="mb-0 float-right">
+                                            <span> {company_website} </span>
+                                            <i class="fa fa-globe ms-2 text-info" title="Website"/>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div><br><hr>
+                    {attendees_names}
+                    <br>
+                    {mom_description_content}
+                </div>
+            """).format(
+                logo_html=logo_html,
+                company_name=company_id.name,
+                company_street=company_id.street,
+                company_city=company_id.city,
+                company_country=company_id.country_id.name,
+                company_phone=company_id.phone,
+                company_email=company_id.email,
+                company_website=company_id.website,
+                attendees_names=attendees_names,
+                mom_description_content=mom_description_content,
+            )
+            article_values = {
+                'name': f"Minutes: {self.name}",  # Name for the description, for that Agenda!
+                'body': body_content,
+                'calendar_id': self.id,
+            }
+
+            description_article = self.env['knowledge.article'].sudo().create(article_values)
+            self.description_article_id = description_article
+            self.description_article_id.product_id = self.product_id.id
+            self.is_description_created = True
+            self.description_article_id.is_minutes_of_meeting = True
+            return self.action_view_description_article()
+        else:
+            return self.action_view_description_article()
     def action_view_knowledge_article(self):
         self.ensure_one()
         for record in self:
@@ -459,110 +581,6 @@ class OdooCalendarInheritence(models.Model):
             self.attendees_lines_ids = partners
             self.has_attendees_added = True
 
-    def action_create_agenda_descriptions(self):
-        company_id = self.env.company
-        # Get the company logo
-        logo = company_id.logo
-        if logo:
-            logo_html = Markup('<img src="%s" class="bg-view" alt="Company Logo"/>') % self._get_src_data_b64(logo)
-            # print(logo_html)
-        if not self.product_line_ids:
-            raise ValidationError("Please add data before making an Article!")
-        if not self.description_article_id:
-            counter = 1
-            company_id = self.env.company
-            mom_description_content = Markup("""""")
-
-            # Build the table rows for each agenda line
-            for line in self.product_line_ids:
-                mom_description_content += Markup("""
-                            {description}<hr>
-                            """).format(
-                                description=line.description or 'N/A'
-                )
-                counter += 1
-            attendees = self.action_confirm_attendees()
-            self.has_attendees_confirmed = True
-            if attendees:
-                mom_description_content += Markup("""
-                                                    <strong>Meeting Attendees:</strong><br><br>
-                """)
-            for attendee in attendees:
-                if attendee:
-                    mom_description_content += Markup("""
-                                    {attendee_name}<br>
-                """).format(attendee_name=attendee.attendee_name)
-            mom_description_content += Markup("""
-                        <hr>
-                """)
-
-            body_content = Markup("""
-                <div>
-                    <header style="text-align: center;">
-                        {logo_html}<br><br>
-                        <h2><strong>{company_name}<strong></h2>
-                    </header>
-                    <div class="container">
-                        <div class="card-body border-dark">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col align-items-center">
-                                    <!-- Name and position -->
-                                    <p class="mb-0">
-                                        <span> {company_street} </span>
-                                    </p>
-                                    <p class="mb-0">
-                                        <span> {company_city} </span>
-                                    </p>
-                                    <p class="m-0">
-                                        <span> {company_country} </span>
-                                    </p>
-                                </div>
-                                <div class="col-auto">
-                                    <!-- Phone and email -->
-                                    <div class="float-right text-end">
-                                        <p class="mb-0 float-right">
-                                            <span> {company_phone} </span>
-                                            <i class="fa fa-phone-square ms-2 text-info" title="Phone"/>
-                                        </p>
-                                        <p class="mb-0 float-right">
-                                            <span> {company_email} </span>
-                                            <i class="fa fa-envelope ms-2 text-info" title="Email"/>
-                                        </p>
-                                        <p class="mb-0 float-right">
-                                            <span> {company_website} </span>
-                                            <i class="fa fa-globe ms-2 text-info" title="Website"/>
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div><br><hr>
-                    {mom_description_content}
-                </div>
-            """).format(
-                logo_html=logo_html,
-                company_name=company_id.name,
-                company_street=company_id.street,
-                company_city=company_id.city,
-                company_country=company_id.country_id.name,
-                company_phone=company_id.phone,
-                company_email=company_id.email,
-                company_website=company_id.website,
-                mom_description_content=mom_description_content
-            )
-            article_values = {
-                'name': f"Minutes: {self.name}",  # Name for the description, for that Agenda!
-                'body': body_content,
-                'calendar_id': self.id,
-            }
-
-            description_article = self.env['knowledge.article'].sudo().create(article_values)
-            self.description_article_id = description_article
-            self.is_description_created = True
-            self.description_article_id.is_minutes_of_meeting = True
-            return self.action_view_description_article()
-        else:
-            return self.action_view_description_article()
 
     def _calendar_meeting_end_tracker(self):
         calendar_meetings = self.env['calendar.event'].search([])
@@ -596,25 +614,31 @@ class OdooCalendarInheritence(models.Model):
         current_time = fields.Datetime.now()
         meeting_end_time = self.stop
         active_user = self.env.user.partner_id.id
-        domain = []
-        if current_time and meeting_end_time:
-            if current_time >= meeting_end_time: #If Meeting Has Ended
-                domain = [
-                    '|',
-                    '&', ('res_model', '=', 'product.template'), ('res_id', '=', self.product_id.id),
-                    '&',
-                    ('res_model', '=', 'product.template'),
-                    ('res_id', 'in', self.product_id.product_variant_ids.ids),
-                ]
-            else: #If meeting is still going!
-                domain = [
-                    '|',
-                    '&', ('res_model', '=', 'product.template'), ('res_id', '=', self.product_id.id),
-                    '&',
-                    ('res_model', '=', 'product.template'),
-                    ('res_id', 'in', self.product_id.product_variant_ids.ids),
-                    ('partner_ids', 'in', [active_user]),
-                ]
+        domain = [
+            '|',
+            '&', ('res_model', '=', 'product.template'), ('res_id', '=', self.product_id.id),
+            '&',
+            ('res_model', '=', 'product.template'),
+            ('res_id', 'in', self.product_id.product_variant_ids.ids),
+            ('partner_ids', 'in', [active_user]),]
+        # if current_time and meeting_end_time:
+            # if current_time >= meeting_end_time: #If Meeting Has Ended
+            #     domain = [
+            #         '|',
+            #         '&', ('res_model', '=', 'product.template'), ('res_id', '=', self.product_id.id),
+            #         '&',
+            #         ('res_model', '=', 'product.template'),
+            #         ('res_id', 'in', self.product_id.product_variant_ids.ids),
+            #     ]
+            # else: #If meeting is still going!
+            #     domain = [
+            #         '|',
+            #         '&', ('res_model', '=', 'product.template'), ('res_id', '=', self.product_id.id),
+            #         '&',
+            #         ('res_model', '=', 'product.template'),
+            #         ('res_id', 'in', self.product_id.product_variant_ids.ids),
+            #         ('partner_ids', 'in', [active_user]),
+
         for rec in self:
             return {
                 'name': _('Documents'),
