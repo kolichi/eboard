@@ -1,5 +1,59 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
+        <record id="project_project_kanban_inherit" model="ir.ui.view">
+            <field name="name">project.project.kanban.view.inherit</field>
+            <field name="model">project.project</field>
+            <field name="inherit_id" ref="project.project_view_kanban_inherit_project"/>
+            <field name="arch" type="xml">
+                <xpath expr="//kanban//a[@name='project_update_all_action']" position="replace">
+                    <a name="project_update_all_action" type="object" t-attf-context="{'active_id': #{record.id.raw_value} }">Updates</a>
+                </xpath>
+            </field>
+        </record>
+    <record id="project_project_search_view_inherit" model="ir.ui.view">
+        <field name="name">project.project.search.inherit.view</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.view_project_project_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='own_projects']" position="attributes">
+                <attribute name="string">My Action Points</attribute>
+            </xpath>
+            <xpath expr="//search//group//filter[@name='Manager']" position="attributes">
+                <attribute name="string">Responsible</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="project_project_form_view_inheritt" model="ir.ui.view">
+        <field name="name">project.project.form.inherit.view</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id'][1]" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='user_id']" position="attributes">
+                <attribute name="string">Responsible</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="project_project_tree_view" model="ir.ui.view">
+        <field name="name">project.project.tree.inherit.view</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.view_project"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='user_id']" position="attributes">
+                <attribute name="string">Responsible</attribute>
+            </xpath>
+            <xpath expr="//field[@name='company_id']" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
     <record id="project_task_form_view" model="ir.ui.view">
         <field name="name">project.task.form.view</field>
         <field name="model">project.task</field>
@@ -7,34 +61,6 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='partner_id']" position="attributes">
                 <attribute name="invisible">1</attribute>
-<!--                <page name="action_points" string="Action Points">-->
-<!--                    <group string="Create a Meeting">-->
-<!--                        <field name="project_child_ids" nolabel="1" colspan="2">-->
-<!--                            <tree editable="bottom">-->
-<!--                                <field name="task_name"/>-->
-<!--                                <field name="start_date"/>-->
-<!--                                <field name="end_date"/>-->
-<!--                                <field name="organizer"/>-->
-<!--                                <field name="partner_ids" widget="many2many_tags"/>-->
-<!--                                <field name="project_task_id" column_invisible="1"/>-->
-<!--&lt;!&ndash;                                <field name="parent_id"/>&ndash;&gt;-->
-<!--                                <field name="calendar_id" column_invisible="1"/>-->
-<!--                                <button name="action_create_meeting" type="object" string="Create Meeting"-->
-<!--                                        class="oe_highlight" invisible="calendar_id"/>-->
-<!--                            </tree>-->
-<!--                        </field>-->
-<!--                    </group>-->
-<!--                </page>-->
-<!--                <page name="minutes_of_meeting" string="Minutes of Meeting">-->
-<!--                    <field name="mom_description" string="Description" placeholder="Enter text here..."/>-->
-<!--                    <field name="video_attachment_ids" widget="one2many" string="Upload Videos">-->
-<!--                        <tree>-->
-<!--                            <field name="calendar_id" column_invisible="1"/>-->
-<!--                            <field name="video_description"/>-->
-<!--                            <field name="avatar" widget="many2many_binary"/>-->
-<!--                        </tree>-->
-<!--                    </field>-->
-<!--                </page>-->
             </xpath>
             <xpath expr="//form//sheet//group//field[@name='project_id']" position="attributes">
                 <attribute name="string">Action Point</attribute>
@@ -42,10 +68,10 @@
         </field>
     </record>
     <record id="project.menu_projects" model="ir.ui.menu">
-            <field name="name">Action Points</field>
+        <field name="name">Action Points</field>
     </record>
     <record id="project.menu_main_pm" model="ir.ui.menu">
-            <field name="name">Action Board</field>
+        <field name="name">Action Board</field>
     </record>
     <record id="project.open_view_project_all" model="ir.actions.act_window">
         <field name="name">Action Points</field>

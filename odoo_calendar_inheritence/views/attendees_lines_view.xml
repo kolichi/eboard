@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="attendees_lines_form_view" model="ir.ui.view">
+        <field name="name">attendees.lines.form.view</field>
+        <field name="model">attendees.lines</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <header>
+                        <div class="d-flex justify-content-between align-items-center ">
+                            <div class="d-flex pb-2 align-items-center">
+                                <div>
+                                    <i class="fa fa-calendar pb-1 fa-3x text-primary" title="LandLord"
+                                       style="transform: rotate(180deg) scaleY(-1);"/>
+                                </div>
+                                <div class="card-body">
+                                    <h2 class="card-title">Minutes of Meeting</h2>
+                                    <p class="card-subtitle mb-2 text-muted">For entering attendees!
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+                    <div>
+                        <field name="attendee_name" string="Name" placeholder="Name"/>
+                        <!--                        <field name="email" string="Email"/>-->
+                        <!--                        <field name="phone" string="Phone"/>-->
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="attendees_lines_tree_view" model="ir.ui.view">
+        <field name="name">attendees.lines.tree.view</field>
+        <field name="model">attendees.lines</field>
+        <field name="arch" type="xml">
+            <tree create="0">
+                <field name="attendee_name" string="Name"/>
+                <field name="email" string="Email"/>
+                <field name="phone" string="Phone"/>
+                <field name="has_attended"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_attendees_lines" model="ir.actions.act_window">
+        <field name="name">Minutes of Meeting</field>
+        <field name="res_model">attendees.lines</field>
+        <field name="view_mode">tree</field>
+        <field name="domain">[('calendar_id', '=', active_id)]</field>
+        <field name="context">{'default_calendar_id': active_id}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Agenda!
+            </p>
+        </field>
+    </record>
+</odoo>

@@ -93,6 +93,9 @@
                         </div>
                     </button>
                 </xpath>
+<!--                <xpath expr="//field[@name='next_appraisal_date']" position="attributes">-->
+<!--                    <attribute name="string">Next Evaluation Date</attribute>-->
+<!--                </xpath>-->
             </field>
         </record>
 

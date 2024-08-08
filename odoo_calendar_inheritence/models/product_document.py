@@ -15,6 +15,8 @@ class ProductDocument(models.Model):
     merged_pdf = fields.Binary(string='Merged PDF', readonly=True)
     product_document_id = fields.Many2one('product.document', string='Document ID')
     shown_on_product_page = fields.Boolean(default=True, store=True)
+    user_ids = fields.Many2many('res.users')
+    partner_ids = fields.Many2many('res.partner')
 
     def merge_selected_pdfs(self):
         print('Starting PDF merge process')

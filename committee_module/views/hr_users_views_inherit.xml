@@ -30,6 +30,12 @@
                 <xpath expr="//button[@name='action_send_appraisal_request']" position="attributes">
                     <attribute name="string">Request Evaluation</attribute>
                 </xpath>
+                <xpath expr="//field[@name='employee_country_id']" position="attributes">
+                    <attribute name="string">Member's Country</attribute>
+                </xpath>
+                <xpath expr="//field[@name='employee_bank_account_id']" position="attributes">
+                    <attribute name="string">Member's Bank Account Number</attribute>
+                </xpath>
             </field>
         </record>
 

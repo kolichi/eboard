@@ -22,10 +22,10 @@ class Task(models.Model):
     video_attachment_ids = fields.One2many(comodel_name='video.attachment', inverse_name='calendar_id', string="Attachments")
     mom_description = fields.Html(name="mom_description", string="Description")
 
-    @api.model
-    def create(self, vals):
-        task = super(Task, self).create(vals)
-        return task
+    # @api.model
+    # def create(self, vals):
+    #     task = super(Task, self).create(vals)
+    #     return task
 
     # def action_create_meeting(self):
     #     vals = []

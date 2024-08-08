@@ -16,6 +16,10 @@
             <field name="model">product.document</field>
             <field name="inherit_id" ref="product.product_document_form"/>
             <field name="arch" type="xml">
+                <xpath expr="//field[@name='datas']" position="after">
+<!--                    <field name="user_ids" string="Document visible to: " widget="many2many_tags"/>-->
+                    <field name="partner_ids" string="Document visible to: " widget="many2many_tags"/>
+                </xpath>
                 <xpath expr="//field[@name='datas']" position="attributes">
                     <attribute name="string">File</attribute>
                 </xpath>
@@ -42,7 +46,7 @@
             <field name="arch" type="xml">
                 <xpath expr="//div[@name='bottom']" position="replace">
                     <div>
-                        <button name="action_open_pdf_annotation" id="open_pdf_annotation" string="PDF Annotation"
+                        <button name="action_open_pdf_annotation" class="btn btn-primary" id="open_pdf_annotation" string="PDF Annotation"
                                 type="object"/>
                     </div>
                 </xpath>
@@ -68,5 +72,20 @@
 
             </field>
         </record>
+
+        <record id="sale_product_document_kanban_inherit_extended" model="ir.ui.view">
+            <field name="name">sale.product.document.inherit.extended</field>
+            <field name="model">product.document</field>
+            <field name="inherit_id" ref="sale.product_document_kanban"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[@name='bottom']" position="replace">
+                    <div>
+                        <button name="action_open_pdf_annotation" class="btn btn-primary" id="open_pdf_annotation" string="PDF Annotation"
+                                type="object"/>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+
     </data>
 </odoo>

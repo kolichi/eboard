@@ -1,6 +1,7 @@
 from markupsafe import Markup
 from odoo import models, fields, _, api
 from odoo.exceptions import ValidationError
+import base64
 
 class CalendarEventProductLine(models.Model):
     _name = 'calendar.event.product.line'
@@ -13,45 +14,97 @@ class CalendarEventProductLine(models.Model):
     quantity = fields.Float(string="Quantity")
     uom_id = fields.Many2one('uom.uom', string="Unit of Measure")
     agenda = fields.Char(string='Agenda', default=_('new'))
-    presenter_id = fields.Many2many('hr.employee', string="Presenter", tracking=True)
+    presenter_id = fields.Many2many('res.users', string="Presenter", tracking=True)
     duration = fields.Float(string="Duration")
     start_date = fields.Datetime(string='Start Date', default=lambda self: fields.Datetime.now())
     end_date = fields.Datetime(string='End Date')
     description = fields.Html(string='Description')
     time = fields.Char(string='Time')
+    pdf_attachment = fields.Many2many('ir.attachment', string='Add Attachments')
 
     @api.model_create_multi
     def create(self, values):
-
-        for value in values:
-            if not value.get('agenda') or value['agenda'] == _('new'):
-                value['agenda'] = self.env['ir.sequence'].next_by_code('knowledge.article.sequence')
-                # self._check_unique_agenda(value['agenda'])
         rtn = super(CalendarEventProductLine, self).create(values)
-        for rec in rtn:
-            print(rec.agenda)
-            product_values = {
-                'name': rec.agenda,
-                'categ_id': self.env.ref("odoo_calendar_inheritence.product_category_dummy").id,
-            }
-            create_product = self.env['product.template'].sudo().create(product_values)
-            rec.product_id = create_product.id
+        for record in rtn:
+            record.product_id = record.calendar_id.product_id.id
+            product = record.product_id
+        document_model = self.env['product.document']
+        if record.pdf_attachment:
+            for attachment in record.pdf_attachment:
+                attachment_data = attachment.datas
+                attachment_bytes = base64.b64encode(attachment_data)
+                new_document = document_model.sudo().create(
+                    {
+                        'res_model': 'product.template',
+                        'name':attachment.name,
+                        'type':'binary',
+                        'datas':attachment_bytes,
+                        'res_id':product.id,
+                        # 'user_ids':[(6, 0, self.env.user.id)],
+                    }
+                )
+            record.calendar_id.compute_visible_users()
         return rtn
+
+    def write(self, values):
+        # print(self)
+        if 'agenda' in values and values['agenda']:
+            self._check_unique_agenda(values['agenda'], self.id)
+        # print(values)
+        if 'pdf_attachment' in values:
+            create_doc=[]
+            list_ids=[]
+            for attachment in values['pdf_attachment']:
+                rec_id=attachment[1]
+                list_ids.append(rec_id)
+            att=self.env['ir.attachment'].browse(list_ids)
+            for rec in att:
+                attachment_data = rec.datas
+                attachment_bytes = base64.b64encode(attachment_data)
+                create_doc.append({
+                    'res_model': 'product.template',
+                    'name': rec.name,
+                    'type': 'binary',
+                    'datas': attachment_bytes,
+                    'res_id': self.product_id.id,
+                    # 'user_ids':[(6, 0, self.env.user.id)],
+                })
+            self.env['product.document'].sudo().create(create_doc)
+            self.calendar_id.compute_visible_users()
+
+
+                # attachment_data = attachment.datas
+                # attachment_bytes = base64.b64encode(attachment_data)
+
+        res=super(CalendarEventProductLine, self).write(values)
+        # print(res)
+        return res
+
+    def _create_subtask(self):
+        project_task_model = self.env['project.task']
+        for line in self:
+            project_name = line.calendar_id.name
+            project_id = line.calendar_id.project_id.id
+            parent_task_id = line.calendar_id.task_id.id if line.calendar_id.task_id else False
+            if not project_id:
+                raise ValidationError(_('The project is not set for the calendar event.'))
+            task_vals = {
+                'name': project_name,
+                'project_id': project_id,
+                # 'parent_id': parent_task_id,
+                'description': line.description or '',
+                'user_ids':  [(6, 0, line.presenter_id.ids)],
+                'date_deadline': line.end_date,
+            }
+            project_task_model.create(task_vals)
 
     def action_create_html(self):
         active_id = self.product_id.product_document_ids.id
         company_id = self.env.company.id
-        html=Markup('<a href="/web?#active_id=%d&amp;action=qxm_product_pdf_annotation_tool.product_pdf_annotation&amp;cids=%d" style="padding: 5px 10px; color: #FFFFFF; text-decoration: none; background-color: #875A7B; border: 1px solid #875A7B; border-radius: 3px">View</a>')%(active_id, company_id)
-        vALS={'name':"PDF test","body":html}
-        res=self.env['knowledge.article'].sudo().create(vALS)
-        # Markup("<div><b>%s</b></div>") % _("Lead Reset to Draft")
-        print(res)
-        # http://localhost:8069/web?debug=1#action=qxm_product_pdf_annotation_tool.product_pdf_annotation&active_id=26&cids=1&menu_id=100
-
-    def write(self, values):
-        if 'agenda' in values and values['agenda']:
-            self._check_unique_agenda(values['agenda'], self.id)
-        return super(CalendarEventProductLine, self).write(values)
+        html = Markup('<a href="/web?#active_id=%d&amp;action=qxm_product_pdf_annotation_tool.product_pdf_annotation&amp;cids=%d" style="padding: 5px 10px; color: #FFFFFF; text-decoration: none; background-color: #875A7B; border: 1px solid #875A7B; border-radius: 3px">View</a>') % (active_id, company_id)
+        vals = {'name': "PDF test", 'body': html}
+        res = self.env['knowledge.article'].sudo().create(vals)
+        # print(res)
 
     def _check_unique_agenda(self, agenda, exclude_id=None):
         domain = [('agenda', '=', agenda)]
@@ -71,7 +124,6 @@ class CalendarEventProductLine(models.Model):
         products_to_delete.unlink()
 
     def action_open_documents(self):
-        # self.ensure_one()
         company_id = self.env.company.id
         for rec in self:
             return {
@@ -86,10 +138,10 @@ class CalendarEventProductLine(models.Model):
                 },
                 'domain': [
                     '|',
-                        '&', ('res_model', '=', 'product.template'), ('res_id', '=', rec.product_id.id),
-                        '&',
-                            ('res_model', '=', 'product.template'),
-                            ('res_id', 'in', rec.product_id.product_variant_ids.ids),
+                    '&', ('res_model', '=', 'product.template'), ('res_id', '=', rec.product_id.id),
+                    '&',
+                    ('res_model', '=', 'product.template'),
+                    ('res_id', 'in', rec.product_id.product_variant_ids.ids),
                 ],
                 'target': 'current',
                 'help': """
@@ -99,17 +151,9 @@ class CalendarEventProductLine(models.Model):
                     <p>
                         %s
                         <br/>
-                        %s
-                    </p>
-                    <p>
-                        <a class="oe_link" href="https://www.odoo.com/documentation/17.0/_downloads/5f0840ed187116c425fdac2ab4b592e1/pdfquotebuilderexamples.zip">
-                        %s
-                        </a>
                     </p>
                 """ % (
-                    _("Upload files to your product"),
-                    _("Use this feature to store any files you would like to share with your customers"),
-                    _("(e.g: product description, ebook, legal notice, ...)."),
-                    _("Download examples")
+                    _("Upload Pdfs to your agenda"),
+                    _("Use this feature to store pdfs you would like to share with your members"),
                 )
             }
