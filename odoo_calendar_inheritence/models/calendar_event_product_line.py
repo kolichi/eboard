@@ -31,14 +31,13 @@ class CalendarEventProductLine(models.Model):
         document_model = self.env['product.document']
         if record.pdf_attachment:
             for attachment in record.pdf_attachment:
+                # merged_pdf_content = base64.b64encode(attachment.datas.read())
                 attachment_data = attachment.datas
-                attachment_bytes = base64.b64encode(attachment_data)
+                # attachment_bytes = base64.b64encode(attachment_data)
                 new_document = document_model.sudo().create(
                     {
                         'res_model': 'product.template',
                         'name':attachment.name,
-                        'type':'binary',
-                        'datas':attachment_bytes,
                         'res_id':product.id,
                         'ir_attachment_id': attachment.id,
                         # 'user_ids':[(6, 0, self.env.user.id)],
@@ -66,7 +65,7 @@ class CalendarEventProductLine(models.Model):
                 elif attachment[0] == 3:
                     rec_id = attachment[1]
                     is_remove = True
-                    unlink_list_ids.append((rec_id))
+                    unlink_list_ids.append(rec_id)
                     # doc = self.env['ir.attachment'].browse(unlink_list_ids)
             if create_list_ids:
                 att = self.env['ir.attachment'].browse(create_list_ids)
@@ -76,8 +75,6 @@ class CalendarEventProductLine(models.Model):
                     create_doc.append({
                         'res_model': 'product.template',
                         'name': rec.name,
-                        'type': 'binary',
-                        'datas': attachment_bytes,
                         'res_id': self.product_id.id,
                         'ir_attachment_id': rec.id
                         # 'user_ids':[(6, 0, self.env.user.id)],

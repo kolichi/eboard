@@ -17,7 +17,7 @@ class ProductDocument(models.Model):
     shown_on_product_page = fields.Boolean(default=True, store=True)
     user_ids = fields.Many2many('res.users')
     partner_ids = fields.Many2many('res.partner')
-    ir_attachment_id = fields.Many2one('ir.attachment')
+    ir_attachment_custom_id = fields.Many2one('ir.attachment')
 
     def merge_selected_pdfs(self):
         print('Starting PDF merge process')

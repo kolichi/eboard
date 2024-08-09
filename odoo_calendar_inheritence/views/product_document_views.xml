@@ -44,7 +44,7 @@
                 <xpath expr="//field[@name='datas']" position="after">
                     <!--                    <field name="user_ids" string="Document visible to: " widget="many2many_tags"/>-->
                     <field name="partner_ids" string="Document visible to: " widget="many2many_tags"/>
-                    <field name="ir_attachment_id"/>
+                    <field name="ir_attachment_id" required="0" invisible="1"/>
                 </xpath>
                 <xpath expr="//field[@name='datas']" position="attributes">
                     <attribute name="string">File</attribute>
@@ -74,7 +74,7 @@
                     <div>
                         <button name="action_open_pdf_annotation" class="btn btn-primary" id="open_pdf_annotation"
                                 string="PDF Annotation"
-                                type="object"/>
+                                type="object" groups="odoo_calendar_inheritence.group_agenda_meeting_board_secretary"/>
                     </div>
                 </xpath>
             </field>
