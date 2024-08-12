@@ -1,4 +1,5 @@
 from markupsafe import Markup
+from bs4 import BeautifulSoup
 import base64
 from datetime import time
 import logging
@@ -55,11 +56,12 @@ class OdooCalendarInheritence(models.Model):
                                  string='Customer', recursive=True, tracking=True, store=True, readonly=False,
                                  domain="['|', ('company_id', '=?', company_id), ('company_id', '=', False)]")
     company_id = fields.Many2one('res.company', string='Company', store=True, readonly=False, recursive=True, copy=True,
-    default=lambda self: self.env.user.company_id
-    )
+                                 default=lambda self: self.env.user.company_id
+                                 )
 
     tag_ids = fields.Many2many('project.tags', string='Tags')
-    new_project_id = fields.Many2one('project.project', string='Action Point',domain="['|', ('company_id', '=', False), ('company_id', '=?',  company_id)]")
+    new_project_id = fields.Many2one('project.project', string='Action Point',
+                                     domain="['|', ('company_id', '=', False), ('company_id', '=?',  company_id)]")
     new_task_name = fields.Char('Task Title')
     user_ids = fields.Many2many('res.users',
                                 string='Assignees', tracking=True, )
@@ -85,13 +87,14 @@ class OdooCalendarInheritence(models.Model):
     last_write_count = fields.Integer('Last Count')
     last_write_date = fields.Datetime('Last Write Date')
     product_id = fields.Many2one('product.template', string="Product")
-    nested_calender=fields.Boolean(default=False)
+    nested_calender = fields.Boolean(default=False)
     agenda_lines_count = fields.Integer(string="Agendas", compute='_compute_agenda_count')
     mom_lines_count = fields.Integer(string="Minutes of Meeting", compute='_compute_mom_count')
     action_point_count = fields.Integer(string="Action Points", compute='_compute_action_count')
     company_logo = fields.Image()
     is_meeting_finished = fields.Boolean(default=False)
     is_description_created = fields.Boolean(default=False)
+
     @api.depends('product_line_ids')
     def _compute_agenda_count(self):
         for rec in self:
@@ -114,7 +117,7 @@ class OdooCalendarInheritence(models.Model):
             if rec.attendees_lines_ids:
                 for attendee in rec.attendees_lines_ids:
                     if attendee.has_attended:
-                        count +=1
+                        count += 1
                 rec.mom_lines_count = count
             else:
                 rec.mom_lines_count = 0
@@ -144,17 +147,17 @@ class OdooCalendarInheritence(models.Model):
                 rec['product_id'] = create_product.id
                 if rec.get('name'):
                     project_values = {
-                        'name':rec.get('name'),
+                        'name': rec.get('name'),
                     }
                     create_project = self.env['project.project'].sudo().create(project_values)
-                    rec['project_id']=create_project.id
+                    rec['project_id'] = create_project.id
                 else:
                     project_values = {
                         'name': 'New Project',
                     }
                     create_project = self.env['project.project'].sudo().create(project_values)
                     rec['project_id'] = create_project.id
-                
+
                 stage_data = [
                     {'name': 'New', 'project_ids': [(4, create_project.id)]},
                     {'name': 'In Progress', 'project_ids': [(4, create_project.id)]},
@@ -173,11 +176,10 @@ class OdooCalendarInheritence(models.Model):
         if 'name' in vals:
             if self.project_id:
                 self.project_id.sudo().write({
-                    'name':vals['name']
+                    'name': vals['name']
                 })
         res = super(OdooCalendarInheritence, self).write(vals)
         return res
-
 
     @api.depends('article_id')
     def _compute_article_exists(self):
@@ -198,7 +200,6 @@ class OdooCalendarInheritence(models.Model):
 
     def create_article_calendar(self):
         if not self.product_line_ids:
-
             raise ValidationError("Please add an agenda before making an Article!")
 
         counter = 1
@@ -219,7 +220,7 @@ class OdooCalendarInheritence(models.Model):
                                 <th style="padding: 10px; border: 0px;">Presenter</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="article_body">
         """)
 
         for line in self.product_line_ids:
@@ -321,7 +322,6 @@ class OdooCalendarInheritence(models.Model):
         self.last_write_date = fields.Datetime.now()
 
     def action_add_knowledge_article(self):
-
         if not self.article_id:
             raise ValidationError("No Article for these records in Knowledge Module!")
 
@@ -330,12 +330,13 @@ class OdooCalendarInheritence(models.Model):
         if not filtered_product_lines_2:
             raise UserError(_("No new data added to the agenda! Please add data before making changes to the article!"))
 
-        counter = 1
         existing_content = self.article_id.body
-        new_html_content = Markup("""
-                    <table class='table'>
-                        <tbody>
-        """)
+        soup = BeautifulSoup(existing_content, 'html.parser')
+
+        # Find the existing table body
+        table_body = soup.find('tbody')
+        if not table_body:
+            raise UserError(_("No existing table found in the article!"))
 
         filtered_product_lines = [line for line in self.product_line_ids if line.create_date < self.last_write_date]
         serial = len(filtered_product_lines) + 1
@@ -344,34 +345,146 @@ class OdooCalendarInheritence(models.Model):
             if line.create_date >= self.last_write_date:
                 presenters = ', '.join(presenter.name for presenter in line.presenter_id)
 
-                new_html_content += Markup("""    
-                                            <tr style="border: 0px;">
-                                                <td style="padding: 10px; border: 0px;">{serial}</td>
-                                                <td style="padding: 10px; border: 0px;">{description}</td>
-                                                <td style="padding: 10px; border: 0px;">{presenters}</td>
-                                            </tr>
-                                            """).format(
-                                                serial=serial,
-                                                description=line.description or 'N/A',
-                                                presenters=presenters or 'N/A'
-                )
+                # Strip HTML tags from the description and preserve line breaks
+                description_soup = BeautifulSoup(line.description or 'N/A', 'html.parser')
+                description_text = description_soup.get_text()
+                description_text = description_text.replace('\n', '<br>')
+
+                new_row = soup.new_tag('tr', style="border: 0px;")
+
+                serial_td = soup.new_tag('td', style="padding: 10px; border: 0px;")
+                serial_td.string = str(serial)
+                new_row.append(serial_td)
+
+                description_td = soup.new_tag('td', style="padding: 10px; border: 0px;")
+                description_td.append(BeautifulSoup(description_text, 'html.parser'))
+                new_row.append(description_td)
+
+                presenters_td = soup.new_tag('td', style="padding: 10px; border: 0px;")
+                presenters_td.string = presenters or 'N/A'
+                new_row.append(presenters_td)
+
+                table_body.append(new_row)
                 serial += 1
 
         self.last_write_date = fields.Datetime.now()
-        new_html_content += Markup("""
-                        </tbody>
-                    </table>
-                """)
 
-        merged_content = Markup(existing_content) + Markup(new_html_content)
-
-        body_content = Markup(merged_content)
+        # Convert the modified soup object back to a string
+        updated_content = str(soup)
 
         article_values = {
-            # Use the calendar event name for the article
-            'body': body_content,
+            'body': Markup(updated_content),
         }
         self.article_id.sudo().write(article_values)
+
+    # def action_add_knowledge_article(self):
+    #         if not self.article_id:
+    #             raise ValidationError("No Article for these records in Knowledge Module!")
+    #
+    #         filtered_product_lines_2 = [line for line in self.product_line_ids if
+    #                                     line.create_date >= self.last_write_date]
+    #
+    #         if not filtered_product_lines_2:
+    #             raise UserError(
+    #                 _("No new data added to the agenda! Please add data before making changes to the article!"))
+    #
+    #         existing_content = self.article_id.body
+    #         soup = BeautifulSoup(existing_content, 'html.parser')
+    #
+    #         # Find the existing table body
+    #         table_body = soup.find('tbody')
+    #         if not table_body:
+    #             raise UserError(_("No existing table found in the article!"))
+    #
+    #         filtered_product_lines = [line for line in self.product_line_ids if line.create_date < self.last_write_date]
+    #         serial = len(filtered_product_lines) + 1
+    #
+    #         for line in self.product_line_ids:
+    #             if line.create_date >= self.last_write_date:
+    #                 presenters = ', '.join(presenter.name for presenter in line.presenter_id)
+    #
+    #                 new_row = soup.new_tag('tr', style="border: 0px;")
+    #
+    #                 serial_td = soup.new_tag('td', style="padding: 10px; border: 0px;")
+    #                 serial_td.string = str(serial)
+    #                 new_row.append(serial_td)
+    #
+    #                 description_td = soup.new_tag('td', style="padding: 10px; border: 0px;")
+    #                 description_td.string = line.description or 'N/A'
+    #                 new_row.append(description_td)
+    #
+    #                 presenters_td = soup.new_tag('td', style="padding: 10px; border: 0px;")
+    #                 presenters_td.string = presenters or 'N/A'
+    #                 new_row.append(presenters_td)
+    #
+    #                 table_body.append(new_row)
+    #                 serial += 1
+    #
+    #         self.last_write_date = fields.Datetime.now()
+    #
+    #         # Convert the modified soup object back to a string
+    #         updated_content = str(soup)
+    #
+    #         article_values = {
+    #             'body': Markup(updated_content),
+    #         }
+    #         self.article_id.sudo().write(article_values)
+
+    # def action_add_knowledge_article(self):
+    #     if not self.article_id:
+    #         raise ValidationError("No Article for these records in Knowledge Module!")
+    #
+    #     filtered_product_lines_2 = [line for line in self.product_line_ids if line.create_date >= self.last_write_date]
+    #
+    #     if not filtered_product_lines_2:
+    #         raise UserError(_("No new data added to the agenda! Please add data before making changes to the article!"))
+    #
+    #     existing_content = self.article_id.body
+    #     soup = BeautifulSoup(existing_content, 'html.parser')
+    #
+    #     # Find the existing table body
+    #     table_body = soup.find('tbody')
+    #     if not table_body:
+    #         raise UserError(_("No existing table found in the article!"))
+    #
+    #     filtered_product_lines = [line for line in self.product_line_ids if line.create_date < self.last_write_date]
+    #     serial = len(filtered_product_lines) + 1
+    #
+    #     for line in self.product_line_ids:
+    #         if line.create_date >= self.last_write_date:
+    #             presenters = ', '.join(presenter.name for presenter in line.presenter_id)
+    #
+    #             # Strip HTML tags from the description
+    #             description_soup = BeautifulSoup(line.description or 'N/A', 'html.parser')
+    #             description_text = description_soup.get_text()
+    #
+    #             new_row = soup.new_tag('tr', style="border: 0px;")
+    #
+    #             serial_td = soup.new_tag('td', style="padding: 10px; border: 0px;")
+    #             serial_td.string = str(serial)
+    #             new_row.append(serial_td)
+    #
+    #             description_td = soup.new_tag('td', style="padding: 10px; border: 0px;")
+    #             description_td.string = description_text
+    #             new_row.append(description_td)
+    #
+    #             presenters_td = soup.new_tag('td', style="padding: 10px; border: 0px;")
+    #             presenters_td.string = presenters or 'N/A'
+    #             new_row.append(presenters_td)
+    #
+    #             table_body.append(new_row)
+    #             serial += 1
+    #
+    #     self.last_write_date = fields.Datetime.now()
+    #
+    #     # Convert the modified soup object back to a string
+    #     updated_content = str(soup)
+    #
+    #     article_values = {
+    #         'body': Markup(updated_content),
+    #     }
+    #     self.article_id.sudo().write(article_values)
+
 
     def action_create_agenda_descriptions(self):
         company_id = self.env.company
@@ -388,13 +501,12 @@ class OdooCalendarInheritence(models.Model):
             mom_description_content = Markup("""""")
             attendees_names = Markup("""""")
 
-
             # Build the table rows for each agenda line
             for line in self.product_line_ids:
                 mom_description_content += Markup("""
                             {description}<hr>
                             """).format(
-                                description=line.description or 'N/A'
+                    description=line.description or 'N/A'
                 )
                 counter += 1
             attendees = self.action_confirm_attendees()
@@ -483,6 +595,7 @@ class OdooCalendarInheritence(models.Model):
             return self.action_view_description_article()
         else:
             return self.action_view_description_article()
+
     def action_view_knowledge_article(self):
         self.ensure_one()
         for record in self:
@@ -534,7 +647,7 @@ class OdooCalendarInheritence(models.Model):
                     'user_ids': [(6, 0, record.user_ids.ids)],
                     'date_deadline': record.date_deadline,
                     'stage_id': record.stage_id.id if record.stage_id else False,
-                    'parent_id':False,
+                    'parent_id': False,
                 }
                 new_task = self.env['project.task'].create(task_vals)
                 record.task_id = new_task.id
@@ -581,7 +694,6 @@ class OdooCalendarInheritence(models.Model):
             self.attendees_lines_ids = partners
             self.has_attendees_added = True
 
-
     def _calendar_meeting_end_tracker(self):
         calendar_meetings = self.env['calendar.event'].search([])
         if calendar_meetings:
@@ -620,24 +732,24 @@ class OdooCalendarInheritence(models.Model):
             '&',
             ('res_model', '=', 'product.template'),
             ('res_id', 'in', self.product_id.product_variant_ids.ids),
-            ('partner_ids', 'in', [active_user]),]
+            ('partner_ids', 'in', [active_user]), ]
         # if current_time and meeting_end_time:
-            # if current_time >= meeting_end_time: #If Meeting Has Ended
-            #     domain = [
-            #         '|',
-            #         '&', ('res_model', '=', 'product.template'), ('res_id', '=', self.product_id.id),
-            #         '&',
-            #         ('res_model', '=', 'product.template'),
-            #         ('res_id', 'in', self.product_id.product_variant_ids.ids),
-            #     ]
-            # else: #If meeting is still going!
-            #     domain = [
-            #         '|',
-            #         '&', ('res_model', '=', 'product.template'), ('res_id', '=', self.product_id.id),
-            #         '&',
-            #         ('res_model', '=', 'product.template'),
-            #         ('res_id', 'in', self.product_id.product_variant_ids.ids),
-            #         ('partner_ids', 'in', [active_user]),
+        # if current_time >= meeting_end_time: #If Meeting Has Ended
+        #     domain = [
+        #         '|',
+        #         '&', ('res_model', '=', 'product.template'), ('res_id', '=', self.product_id.id),
+        #         '&',
+        #         ('res_model', '=', 'product.template'),
+        #         ('res_id', 'in', self.product_id.product_variant_ids.ids),
+        #     ]
+        # else: #If meeting is still going!
+        #     domain = [
+        #         '|',
+        #         '&', ('res_model', '=', 'product.template'), ('res_id', '=', self.product_id.id),
+        #         '&',
+        #         ('res_model', '=', 'product.template'),
+        #         ('res_id', 'in', self.product_id.product_variant_ids.ids),
+        #         ('partner_ids', 'in', [active_user]),
 
         for rec in self:
             return {
@@ -665,6 +777,7 @@ class OdooCalendarInheritence(models.Model):
                     _("Use this feature to store pdfs you would like to share with your members"),
                 )
             }
+
     def action_points_kanban(self):
         self.ensure_one()
         return {
@@ -674,15 +787,17 @@ class OdooCalendarInheritence(models.Model):
             'res_model': 'project.task',
             'target': 'current',
             'domain': [('project_id', '=', self.project_id.id)],
-            'context': {'default_project_id':self.project_id.id},
+            'context': {'default_project_id': self.project_id.id},
         }
 
     def action_open_custom_composer(self):
         if not self.partner_ids:
             raise UserError(_("There are no attendees on these events"))
-        template_id = self.env['ir.model.data']._xmlid_to_res_id('appointment.appointment_booked_mail_template', raise_if_not_found=False)
+        template_id = self.env['ir.model.data']._xmlid_to_res_id('appointment.appointment_booked_mail_template',
+                                                                 raise_if_not_found=False)
         # The mail is sent with datetime corresponding to the sending user TZ
-        default_composition_mode = self.env.context.get('default_composition_mode', self.env.context.get('composition_mode', 'comment'))
+        default_composition_mode = self.env.context.get('default_composition_mode',
+                                                        self.env.context.get('composition_mode', 'comment'))
         compose_ctx = dict(
             default_composition_mode=default_composition_mode,
             default_model='calendar.event',
@@ -708,10 +823,9 @@ class OdooCalendarInheritence(models.Model):
             if record.product_id and record.partner_ids:
                 record.product_id.product_document_ids.sudo().write(
                     {
-                        'partner_ids':[(6,0,record.partner_ids.ids)]
+                        'partner_ids': [(6, 0, record.partner_ids.ids)]
                     }
                 )
-
 
 
 class AgendaLines(models.Model):

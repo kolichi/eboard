@@ -30,7 +30,7 @@
                             </div>
                         </div>
                     </header>
-                    <field name="body"/>
+                    <field name="body" widget="knowledge_article_html_field" class="o_field_html"/>
                 </sheet>
             </xpath>
         </field>

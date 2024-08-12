@@ -40,7 +40,23 @@
                 <field name="email" string="Email"/>
                 <field name="phone" string="Phone"/>
                 <field name="has_attended"/>
+                <field name="calendar_id"/>
             </tree>
+        </field>
+    </record>
+
+    <record id="attendees_lines_search_view" model="ir.ui.view">
+        <field name="name">attendees.lines.search.view</field>
+        <field name="model">attendees.lines</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="attendee_name"/>
+                <filter name="group_by_date" string="Date" date="create_date"/>
+                <group expand="0" string="Group By">
+                    <filter string="Attendee Name" name="attende_name" context="{'group_by': 'attendee_name'}"/>
+                    <!--                    <filter name="group_by_name" />-->
+                </group>
+            </search>
         </field>
     </record>
 
@@ -56,4 +72,36 @@
             </p>
         </field>
     </record>
+
+    <record id="attendees_lines_tree_view_reporting" model="ir.ui.view">
+        <field name="name">attendees.lines.tree.view.reporting</field>
+        <field name="model">attendees.lines</field>
+        <field name="arch" type="xml">
+            <tree create="0">
+                <field name="attendee_name" string="Name"/>
+                <field name="create_date"/>
+<!--                <field name="email" string="Email"/>-->
+<!--                <field name="phone" string="Phone"/>-->
+<!--                <field name="has_attended"/>-->
+                <field name="calendar_id"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_attendees_lines_reporting" model="ir.actions.act_window">
+        <field name="name">Meeting Report</field>
+        <field name="res_model">attendees.lines</field>
+        <field name="view_mode">tree</field>
+        <field name="view_id" ref="attendees_lines_tree_view_reporting"/>
+        <field name="context">{'group_by': 'attendee_name'}</field>
+        <!--        <field name="domain">[('calendar_id', '=', active_id)]</field>-->
+        <!--        <field name="context">{'default_calendar_id': active_id}</field>-->
+    </record>
+
+    <menuitem
+            id="menu_attendee_line"
+            name="Meeting Track"
+            action="action_attendees_lines_reporting"
+            parent="appointment.reporting_menu_calendar"
+    />
 </odoo>

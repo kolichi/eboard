@@ -1,7 +1,7 @@
 from odoo import models, fields, api, _, Command
 
 class AttendeesLines(models.Model):
-    _name =  'attendees.lines'
+    _name ='attendees.lines'
 
     attendee_name = fields.Char(string='Attendee')
     email = fields.Char(string='Email')
