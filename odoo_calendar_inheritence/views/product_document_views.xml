@@ -74,7 +74,7 @@
                     <div>
                         <button name="action_open_pdf_annotation" class="btn btn-primary" id="open_pdf_annotation"
                                 string="PDF Annotation"
-                                type="object" groups="odoo_calendar_inheritence.group_agenda_meeting_board_secretary"/>
+                                type="object"/>
                     </div>
                 </xpath>
             </field>

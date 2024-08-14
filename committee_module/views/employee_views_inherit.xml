@@ -86,15 +86,19 @@
             <field name="model">hr.employee</field>
             <field name="inherit_id" ref="hr.view_employee_form"/>
             <field name="arch" type="xml">
+
                 <xpath expr="//sheet//group//field[@name='department_id']" position="attributes">
                     <attribute name="string">Committee</attribute>
                 </xpath>
+
                 <xpath expr="//page[@name='public']" position="attributes">
                     <attribute name="invisible">1</attribute>
                 </xpath>
+
                 <xpath expr="//field[@name='passport_id']" position="attributes">
                     <attribute name="string">TPIN</attribute>
                 </xpath>
+
                 <xpath expr="//field[@name='lang']" position="attributes">
                     <attribute name="invisible">1</attribute>
                 </xpath>

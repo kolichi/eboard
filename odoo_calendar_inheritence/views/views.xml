@@ -111,11 +111,14 @@
                     <field string="Action Points" name="action_point_count" widget="statinfo"/>
                 </button>
             </xpath>
-            <xpath expr="//button[@name='action_open_composer']" position="replace"/>
+<!--            <xpath expr="//button[@name='action_open_composer']" position="replace"/>-->
             <xpath expr="//button[@name='action_send_sms']" position="replace"/>
             <xpath expr="//page[@name='page_invitations']//button[@name='action_sendmail']" position="replace">
                 <button name="action_open_custom_composer" help="Send Email to attendees" type="object" string="EMAIL"
                         icon="fa-envelope" invisible="not user_can_edit"/>
+            </xpath>
+            <xpath expr="//page[@name='page_invitations']" position="attributes">
+                <attribute name="invisible">1</attribute>
             </xpath>
             <xpath expr="//page[@name='page_invitations']" position="after">
                 <page name="agenda" string="Meeting Agenda">
@@ -157,12 +160,12 @@
                     <field name="has_attendees_added" invisible="1"/>
                     <field name="has_attendees_confirmed" invisible="1"/>
                     <field name="is_description_created" invisible="1"/>
-                    <button name="action_create_agenda_descriptions" type="object" string="Upload minutes"
+                    <button name="action_create_agenda_descriptions" type="object" string="Generate minutes"
                             class="btn btn-warning m-1" icon="fa-external-link" confirm="Do you want to proceed ?"
                             invisible="is_description_created"
                             groups="odoo_calendar_inheritence.group_agenda_meeting_board_secretary"/>
                     <button/>
-                    <button name="action_open_documents" type="object" string="Open Attachments"
+                    <button name="action_open_documents" type="object" string="Upload Minutes"
                             class="btn btn-primary" icon="fa-paperclip" confirm="Do you want to proceed ?"
                             groups="odoo_calendar_inheritence.group_agenda_meeting_board_secretary"/>
                     <!--                    <button name="action_create_agenda_descriptions" type="object" string="View minutes"-->

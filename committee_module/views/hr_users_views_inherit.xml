@@ -15,12 +15,15 @@
                 <xpath expr="//field[@name='coach_id']" position="attributes">
                     <attribute name="invisible">1</attribute>
                 </xpath>
+
                 <xpath expr="//page[@name='public']" position="attributes">
                     <attribute name="invisible">1</attribute>
                 </xpath>
+
                 <xpath expr="//group[@name='identification_group']" position="attributes">
                     <attribute name="invisible">1</attribute>
                 </xpath>
+
                 <xpath expr="//field[@name='employee_type']" position="before">
                     <field name="member_type"/>
                 </xpath>

@@ -138,6 +138,7 @@ class OdooCalendarInheritence(models.Model):
         # print(self._context.get('dont_create_nested'))
         for rec in values:
             if not rec.get('nested_calender'):
+                print("Here NOT")
                 seq_product = self.env['ir.sequence'].next_by_code('knowledge.article.sequence')
                 product_values = {
                     'name': seq_product,
@@ -152,6 +153,7 @@ class OdooCalendarInheritence(models.Model):
                     create_project = self.env['project.project'].sudo().create(project_values)
                     rec['project_id'] = create_project.id
                 else:
+                    print("Else")
                     project_values = {
                         'name': 'New Project',
                     }

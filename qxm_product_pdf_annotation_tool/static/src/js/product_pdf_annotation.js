@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, onMounted, onWillStart, useRef } from "@odoo/owl";
+import { Component, onMounted, onWillStart, useRef} from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { Layout } from "@web/search/layout";
 import { useService } from "@web/core/utils/hooks";
@@ -255,7 +255,6 @@ class ProductPDFAnnotation extends Component {
         const tr = document.createElement('tr');
         tr.id = `table_line_${rowId}`;
         tr.className = 'table_tr_line';
-
         tr.innerHTML = `
             <th scope="row"><span>${pageNumber}</span></th>
             <td><input type="text" class="form-control table_tbody_input" value="${description}" placeholder="Description .."/></td>

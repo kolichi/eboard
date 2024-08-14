@@ -42,7 +42,7 @@ Long description of module's purpose
         # 'data/meeting_email_template.xml',
         'data/product_category.xml',
         'data/knowledge_article_sequence.xml',
-        'data/products_cron.xml',
+        # 'data/products_cron.xml',
         'views/calendar_event_product_line_view.xml',
         'views/attendees_lines_view.xml',
         'views/views.xml',
